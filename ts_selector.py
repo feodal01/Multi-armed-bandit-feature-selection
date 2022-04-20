@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import make_scorer
 import scipy.stats as stats
-from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 from distributions import BetaDistribution
 
