@@ -1,13 +1,16 @@
-import pandas as pd
-import numpy as np
-import random
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import make_scorer
-
-import scipy.stats as stats
-from sklearn.feature_selection import mutual_info_classif
 from pathlib import Path
 import yaml
+import random
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import make_scorer
+import scipy.stats as stats
+from sklearn.feature_selection import mutual_info_classif
+
+from distributions import BetaDistribution
+
 
 class ThompsonSamplingFeatureSelection:
     def __init__(self, model, scoring, X, y, 
