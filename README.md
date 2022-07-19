@@ -9,6 +9,7 @@ Based on blueprint: https://epubs.siam.org/doi/pdf/10.1137/1.9781611976700.36
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import mean_absolute_error
+from ts_selector import ThompsonSamplingFeatureSelection
 
 model = LinearRegression()
 x = your_data_here
