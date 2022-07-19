@@ -25,6 +25,20 @@ class ThompsonSamplingFeatureSelection:
                  cv_splits: int = 3,
                  is_regression: bool = False,
                  n_jobs: int = -1):
+        
+        '''
+        :param model: ML model with sklearn api
+        :param scoring: scoring function (pls use make_scorer from sklearn)
+        :param groups: if data have groups - please specify series with groups. it will be used for cross-validation
+        :param result_folder: where to save yaml with best columns
+        :param biger_is_better: for metric like accuracy - True, for metric like MAE - False
+        :param optimization_steps: how many iterations try to optimize list of fetures
+        :param exploration_coef: the probability of selecting random list of features at every optimization step
+        :param desired_number_of_features: how many features to select
+        :param cv_splits: for cross validation
+        :param is_regression: if problem is regression - please specify True
+        :param n_jobs: how many cores to use in optimization, if -1 all cores will be used
+        '''
 
         self.model = model
         self.scoring = scoring
