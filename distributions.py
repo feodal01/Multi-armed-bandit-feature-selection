@@ -36,10 +36,12 @@ class GammaDistribution:
     def update(self, demand_t: int):
 
         r"""
+        Explanation from revenue optimization task
+        
         In step 1 of TS-fixed, the posterior
         distribution of dik is Gamma(Wik(t−1) + 1, Nk(t−1) + 1), so we sample dik(t) independently from
         a Gamma(Wik(t − 1) + 1, Nk(t − 1) + 1) distribution for each price k and each product i.
-        In steps 2 and 3, LP(d(t)) is solved and the price vector P(t) = pk0 for some k
+        In steps 2 and 3, LP(d(t)) is solved and the vector P(t) = pk0 for some k
         0 ∈ [K] is chosen;
         then the customer demand Di(t) is revealed to the retailer.
 
