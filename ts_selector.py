@@ -208,7 +208,6 @@ class ThompsonSamplingFeatureSelection:
 
             # Update distributions
             #######################################################
-            # features_to_update = list(set(self.current_features).intersection(self.previous_features))
             features_to_update = self.current_features
 
             if len(features_to_update) == 0:
