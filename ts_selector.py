@@ -130,15 +130,6 @@ class ThompsonSamplingFeatureSelection:
     def calc_mutual_info_regression_vector(x, y):
         return mutual_info_regression(x.reshape(-1, 1), y)
 
-    def __old_calculate_information_redundancy(self):
-        tmp_x = self.X.loc[:, self.current_features].copy(deep=True)
-        vf = np.vectorize(self.calc_mutual_info_regression_vector, signature='(n),(n)->()')
-        result = pd.DataFrame(vf(tmp_x.T.values, tmp_x.T.values[:, None]))
-        iredundancy = result.mask(np.triu(np.ones(result.shape, dtype=np.bool_))).sum().sum() / len(
-            self.current_features)
-
-        return iredundancy
-
     def calculate_information_redundancy(self):
         indexes = [self.features.index(f) for f in self.current_features]
         iredundancy = sum(
@@ -154,13 +145,6 @@ class ThompsonSamplingFeatureSelection:
         result = pd.DataFrame(vf(self.X.T.values, self.X.T.values[:, None]))
         iredundancy = result.mask(np.triu(np.ones(result.shape, dtype=np.bool_)))
         self.iredundancy_matrix = iredundancy
-
-    def __old_calculate_information_relevance(self):
-        tmp_x = self.X.loc[:, self.current_features].copy(deep=True)
-        tmp_x = tmp_x.replace([np.inf, -np.inf], np.nan, ).fillna(0)
-        irelevance = sum(mutual_info_classif(tmp_x, self.y)) / len(self.current_features)
-
-        return irelevance
 
     def select_best_features(self):
 
