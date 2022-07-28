@@ -141,7 +141,7 @@ class ThompsonSamplingFeatureSelection:
         return sum([self.mutual_info_x_y[idn] for idn in self.current_features]) / len(self.current_features)
 
     def calculate_information_redundancy_matrix(self):
-        vf = np.vectorize(self.calc_mutual_info_regression, signature='(n),(n)->()')
+        vf = np.vectorize(self.calc_mutual_info_regression_vector, signature='(n),(n)->()')
         result = pd.DataFrame(vf(self.X.T.values, self.X.T.values[:, None]))
         iredundancy = result.mask(np.triu(np.ones(result.shape, dtype=np.bool_)))
         self.iredundancy_matrix = iredundancy
