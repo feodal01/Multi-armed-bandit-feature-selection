@@ -45,7 +45,7 @@ model = LinearRegression()
 tsfs = ThompsonSamplingFeatureSelection(model=model, 
                                         scoring=make_scorer(mean_absolute_error),
                                         desired_number_of_features=10,
-                                        X=x, 
+                                        x=x, 
                                         y=y, 
                                         cv_splits=3, 
                                         exploration_coef=0.3,
