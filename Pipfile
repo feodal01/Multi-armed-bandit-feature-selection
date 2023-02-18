@@ -14,7 +14,6 @@ multiprocess = "*"
 ipykernel = "*"
 wheel = "*"
 twine = "*"
-mabfs = {version = "==0.0.1", index = "https://test.pypi.org/simple/"}
 
 [dev-packages]
 
