@@ -9,7 +9,7 @@ import yaml
 from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
 from sklearn.model_selection import cross_val_score
 
-from .distributions import BetaDistribution
+import distributions
 
 
 class ThompsonSamplingFeatureSelection:
@@ -75,7 +75,7 @@ class ThompsonSamplingFeatureSelection:
         for feat in self.features:
             if self.feat_distributions is None:
                 self.feat_distributions = {}
-            self.feat_distributions[feat] = BetaDistribution(a=1, b=1)
+            self.feat_distributions[feat] = distributions.BetaDistribution(a=1, b=1)
 
     def generative_oracle_beta(self):
         # select features for every step
