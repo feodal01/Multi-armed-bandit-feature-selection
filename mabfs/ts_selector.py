@@ -1,23 +1,14 @@
 import itertools
-import joblib
 import yaml
 import random
 from pathlib import Path
-from typing import Dict
 
-from sklearn.datasets import make_regression
-import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import make_scorer
-from sklearn.metrics import mean_absolute_error
-from sklearn.linear_model import LinearRegression, Lasso, ElasticNet
 from multiprocessing import Pool
 from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
-from sklearn.metrics import mutual_info_score
 
-from distributions import BetaDistribution
+from .distributions import BetaDistribution
 
 
 class ThompsonSamplingFeatureSelection:
@@ -34,8 +25,7 @@ class ThompsonSamplingFeatureSelection:
                  cv_splits: int = 3,
                  is_regression: bool = True,
                  n_jobs: int = 1):
-        
-        
+
         self.model = model
         self.scoring = scoring
         self.n_jobs = n_jobs
@@ -91,7 +81,7 @@ class ThompsonSamplingFeatureSelection:
 
         return sum(metric) / len(metric)
 
-    def calculate_mutual_info_regression(self) -> Dict[str, float]:
+    def calculate_mutual_info_regression(self):
         result = {}
         columns = self.X.columns
         with Pool(processes=self.n_jobs) as p:
@@ -99,7 +89,7 @@ class ThompsonSamplingFeatureSelection:
                 result[col] = p.apply(mutual_info_regression, args=(self.X[col].values.reshape(-1, 1), self.y.values))[0]
         self.mutual_information = result
     
-    def calculate_mutual_info_classification(self) -> Dict[str, float]:
+    def calculate_mutual_info_classification(self):
         result = {}
         columns = self.X.columns
         with Pool(processes=self.n_jobs) as p:
@@ -107,7 +97,7 @@ class ThompsonSamplingFeatureSelection:
                 result[col] = p.apply(mutual_info_classif, args=(self.X[col].values.reshape(-1, 1), self.y.values))[0]
         self.mutual_information = result
         
-    def calculate_mutual_redundancy(self) -> Dict[str, float]:
+    def calculate_mutual_redundancy(self):
         result = {}
         columns = self.X.columns
         with Pool() as p:
