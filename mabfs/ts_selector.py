@@ -60,16 +60,14 @@ class ThompsonSamplingFeatureSelection:
         self.iredundancy_matrix = None
         self._this_relevance = None
         self._this_redundancy = None
-        
-        
+
     def init_distributions_beta(self):
         # init distributions for every feature
         for feat in self.features:
             if self.feat_distributions is None:
                 self.feat_distributions = {}
             self.feat_distributions[feat] = BetaDistribution(a=1, b=1)
-            
-            
+
     def generative_oracle_beta(self):
         # выбираем фичи, которые будем пробовать на каждом шаге
         et = np.random.uniform()
@@ -81,8 +79,7 @@ class ThompsonSamplingFeatureSelection:
                 distr[feat] = self.feat_distributions[feat].sample()
             self.current_features = [k for k, v in distr.items() if
                                      v >= min(sorted(distr.values())[-self.desired_number_of_features:])]
-            
-            
+
     def calculate_metric(self):
         metric = cross_val_score(estimator=self.model,
                                  X=self.X.loc[:, self.current_features],
@@ -93,8 +90,7 @@ class ThompsonSamplingFeatureSelection:
                                  n_jobs=self.n_jobs)
 
         return sum(metric) / len(metric)
-    
-    
+
     def calculate_mutual_info_regression(self) -> Dict[str, float]:
         result = {}
         columns = self.X.columns
@@ -128,7 +124,8 @@ class ThompsonSamplingFeatureSelection:
         return sum([self.mutual_information[idn] for idn in self.current_features]) / len(self.current_features)
     
     def calculate_information_redundancy(self):
-        all_coefs = [self.iredundancy_matrix.get(f'{f[0]}_{f[1]}', None) for f in itertools.combinations(self.current_features, r=2)]
+        all_coefs = [self.iredundancy_matrix.get(f'{f[0]}_{f[1]}', None) for f in
+                     itertools.combinations(self.current_features, r=2)]
         all_coefs = [coef for coef in all_coefs if coef is not None]
         iredundancy = sum(all_coefs) / len(all_coefs)
         return iredundancy[0]
@@ -167,8 +164,8 @@ class ThompsonSamplingFeatureSelection:
     def one_step(self, step: int):
         self.generative_oracle_beta()
         metric = self.calculate_metric()
-        self._this_relevance = self.calculate_information_relevance() # x & y
-        self._this_redundancy = self.calculate_information_redundancy() # x & x
+        self._this_relevance = self.calculate_information_relevance()  # x & y
+        self._this_redundancy = self.calculate_information_redundancy()  # x & x
         if self.is_regression:
             score = metric - (self._this_relevance - self._this_redundancy)
         else:
