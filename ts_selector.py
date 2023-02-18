@@ -1,53 +1,53 @@
 import itertools
-import multiprocessing
-from pathlib import Path
-
 import joblib
 import yaml
 import random
+from pathlib import Path
+from typing import Dict
 
+from sklearn.datasets import make_regression
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score
-from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
+from sklearn.metrics import make_scorer
+from sklearn.metrics import mean_absolute_error
+from sklearn.linear_model import LinearRegression, Lasso, ElasticNet
+from multiprocessing import Pool
+from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
+from sklearn.metrics import mutual_info_score
 
 from distributions import BetaDistribution
 
 
 class ThompsonSamplingFeatureSelection:
-    def __init__(self, model, scoring, X, y,
+    def __init__(self, 
+                 model, 
+                 scoring, 
+                 X, 
+                 y,
                  groups=None,
                  result_folder: str = '',
-                 biger_is_better: bool = True,
                  optimization_steps: int = 100,
                  exploration_coef: float = 0.5,
                  desired_number_of_features: int = 10,
                  cv_splits: int = 3,
-                 is_regression: bool = False,
-                 n_jobs: int = -1):
+                 is_regression: bool = True,
+                 n_jobs: int = 1):
         
-        '''
-        :param model: ML model with sklearn api
-        :param scoring: scoring function (pls use make_scorer from sklearn)
-        :param groups: if data have groups - please specify series with groups. it will be used for cross-validation
-        :param result_folder: where to save yaml with best columns
-        :param biger_is_better: for metric like accuracy - True, for metric like MAE - False
-        :param optimization_steps: how many iterations try to optimize list of fetures
-        :param exploration_coef: the probability of selecting random list of features at every optimization step
-        :param desired_number_of_features: how many features to select
-        :param cv_splits: for cross validation
-        :param is_regression: if problem is regression - please specify True
-        :param n_jobs: how many cores to use in optimization, if -1 all cores will be used
-        '''
-
+        
         self.model = model
         self.scoring = scoring
         self.n_jobs = n_jobs
         self.steps = optimization_steps
+        self.is_regression = is_regression
+        self.result_folder = result_folder
+        
         self.current_best_metric = None
+        self.current_best_score = None
         self.best_features = None
         self.feat_distributions = None
-        self.biger_is_better = biger_is_better
+        
         self.X = X
         self.y = y
         self.groups = groups
@@ -55,23 +55,23 @@ class ThompsonSamplingFeatureSelection:
         self.exploration_coef = exploration_coef
         self.desired_number_of_features = desired_number_of_features
         self.features = list(self.X.columns)
-        self.init_distributions()
-        self.current_features = []
-        self.previous_score = None
-        self.previous_features = []
-        self.result_folder = Path(result_folder)
-        self.mutual_info_x_y = dict()
-        self.is_regression = is_regression
+        
+        self.mutual_information = None
         self.iredundancy_matrix = None
-
-    def init_distributions(self):
+        self._this_relevance = None
+        self._this_redundancy = None
+        
+        
+    def init_distributions_beta(self):
+        # init distributions for every feature
         for feat in self.features:
             if self.feat_distributions is None:
                 self.feat_distributions = {}
-
             self.feat_distributions[feat] = BetaDistribution(a=1, b=1)
-
-    def generative_oracle(self):
+            
+            
+    def generative_oracle_beta(self):
+        # выбираем фичи, которые будем пробовать на каждом шаге
         et = np.random.uniform()
         if self.exploration_coef > et:
             self.current_features = random.sample(self.features, self.desired_number_of_features)
@@ -81,7 +81,8 @@ class ThompsonSamplingFeatureSelection:
                 distr[feat] = self.feat_distributions[feat].sample()
             self.current_features = [k for k, v in distr.items() if
                                      v >= min(sorted(distr.values())[-self.desired_number_of_features:])]
-
+            
+            
     def calculate_metric(self):
         metric = cross_val_score(estimator=self.model,
                                  X=self.X.loc[:, self.current_features],
@@ -92,117 +93,92 @@ class ThompsonSamplingFeatureSelection:
                                  n_jobs=self.n_jobs)
 
         return sum(metric) / len(metric)
-
-    def calc_all_mutual_info(self):
-
-        processes = []
-        if self.n_jobs < 0:
-            pool = multiprocessing.Pool(joblib.cpu_count())
-        else:
-            pool = multiprocessing.Pool(self.n_jobs)
-
-        manager = multiprocessing.Manager()
-        share_dict = manager.dict()
-
-        for feat_name in self.features:
-            processes.append(
-                pool.apply_async(self.calc_mutual_info_regression,
-                                 args=(share_dict,
-                                       feat_name,
-                                       self.X[feat_name],
-                                       self.y
-                                       ),
-                                 )
-            )
-
-        [p.get() for p in processes]
-        self.mutual_info_x_y.update(share_dict)
-
-    def calc_mutual_info_regression(self, share_dict, feat_name, x, y):
-        if self.is_regression:
-            share_dict[feat_name] = mutual_info_regression(np.array(x).reshape(-1, 1),
-                                                           np.array(y).ravel())
-        else:
-            share_dict[feat_name] = mutual_info_classif(np.array(x).reshape(-1, 1),
-                                                        np.array(y).ravel())
-
-    @staticmethod
-    def calc_mutual_info_regression_vector(x, y):
-        return mutual_info_regression(x.reshape(-1, 1), y)
-
-    def calculate_information_redundancy(self):
-        indexes = [self.features.index(f) for f in self.current_features]
-        iredundancy = sum(
-            [self.iredundancy_matrix.loc[pair[1], pair[0]] for pair in itertools.combinations(indexes, r=2)]) / len(
-            self.current_features)
-        return iredundancy
-
+    
+    
+    def calculate_mutual_info_regression(self) -> Dict[str, float]:
+        result = {}
+        columns = self.X.columns
+        with Pool(processes=self.n_jobs) as p:
+            for col in columns:
+                result[col] = p.apply(mutual_info_regression, args=(self.X[col].values.reshape(-1, 1), self.y.values))[0]
+        self.mutual_information = result
+    
+    def calculate_mutual_info_classification(self) -> Dict[str, float]:
+        result = {}
+        columns = self.X.columns
+        with Pool(processes=self.n_jobs) as p:
+            for col in columns:
+                result[col] = p.apply(mutual_info_classif, args=(self.X[col].values.reshape(-1, 1), self.y.values))[0]
+        self.mutual_information = result
+        
+    def calculate_mutual_redundancy(self) -> Dict[str, float]:
+        result = {}
+        columns = self.X.columns
+        with Pool() as p:
+            for i in range(len(columns)):
+                for j in range(i+1, len(columns)):
+                    col1 = columns[i]
+                    col2 = columns[j]
+                    key = f"{col1}_{col2}"
+                    result[key] = p.apply(mutual_info_regression, args=(self.X[col1].values.reshape(-1, 1), 
+                                                                        self.X[col2]))
+        self.iredundancy_matrix = result
+        
     def calculate_information_relevance(self):
-        return sum([self.mutual_info_x_y[idn] for idn in self.current_features]) / len(self.current_features)
-
-    def calculate_information_redundancy_matrix(self):
-        vf = np.vectorize(self.calc_mutual_info_regression_vector, signature='(n),(n)->()')
-        result = pd.DataFrame(vf(self.X.T.values, self.X.T.values[:, None]))
-        iredundancy = result.mask(np.triu(np.ones(result.shape, dtype=np.bool_)))
-        self.iredundancy_matrix = iredundancy
-
+        return sum([self.mutual_information[idn] for idn in self.current_features]) / len(self.current_features)
+    
+    def calculate_information_redundancy(self):
+        all_coefs = [self.iredundancy_matrix.get(f'{f[0]}_{f[1]}', None) for f in itertools.combinations(self.current_features, r=2)]
+        all_coefs = [coef for coef in all_coefs if coef is not None]
+        iredundancy = sum(all_coefs) / len(all_coefs)
+        return iredundancy[0]
+        
     def select_best_features(self):
-
-        self.init_distributions()
-        self.calc_all_mutual_info()
-        self.calculate_information_redundancy_matrix()
-
+        self.init_distributions_beta()
+        
+        print('Calculating mutual iformation ...')
+        if self.is_regression:
+            self.calculate_mutual_info_regression()
+        else:
+            self.calculate_mutual_info_classification()
+        print('Calculating iformation redundancy ...')
+        self.calculate_mutual_redundancy()
+        
         for step in range(self.steps):
+            self.one_step(step)
+        
+    def update_best(self, metric, score, step):
+        self.current_best_metric = metric
+        self.current_best_score = score
+        self.best_features = self.current_features
+        for feat in self.current_features:
+            self.feat_distributions[feat].update(1)
+            
+        # print(f'step {step} new best features:', self.best_features)
+        print(f'metric: {round(metric, 4)} score: {round(score, 4)}')
+        
+        with open(Path(self.result_folder) / 'feature_importances.yaml', 
+                  'w', encoding='utf-8') as iof:
+            yaml.dump(self.best_features,
+                      stream=iof,
+                      default_flow_style=False,
+                      sort_keys=False, allow_unicode=True)
 
-            if len(self.current_features) > 0:
-                self.current_features = []
-
-            self.generative_oracle()
-
-            # Train model
-            #######################################################
-            metric = self.calculate_metric()
-            irelevance = self.calculate_information_relevance()
-            iredundancy = self.calculate_information_redundancy()
-            score = metric + irelevance + iredundancy
-
-            # Better or not?
-            #######################################################
-            update_distr = False
-
-            if (self.current_best_metric is None) or \
-                    ((metric > self.current_best_metric) and (self.biger_is_better == True)) or \
-                    ((metric < self.current_best_metric) and (self.biger_is_better == False)):
-                # metric is better so we want to update best anyway
-                self.current_best_metric = metric
-                self.best_features = self.current_features
-                print(f'step {step} new best features:', self.best_features)
-                print(f'm {round(metric, 4)} bm {round(self.current_best_metric, 4)}')
-
-                with open(self.result_folder / 'feature_importances.yaml', 'w', encoding='utf-8') as iof:
-                    yaml.dump(self.best_features,
-                              stream=iof,
-                              default_flow_style=False,
-                              sort_keys=False, allow_unicode=True)
-
-            if (self.previous_score is None) or \
-                    ((score > self.previous_score) and (self.biger_is_better == True)) or \
-                    ((score < self.previous_score) and (self.biger_is_better == False)):
-                update_distr = True
-
-            # Update distributions
-            #######################################################
-            features_to_update = self.current_features
-
-            if len(features_to_update) == 0:
-                features_to_update = self.current_features
-
-            if update_distr:
-                for feat in features_to_update:
-                    self.feat_distributions[feat].update(1)
-            else:
-                for feat in features_to_update:
-                    self.feat_distributions[feat].update(0)
-
-            self.previous_score = score
-            self.previous_features = self.current_features.copy()
+    def one_step(self, step: int):
+        self.generative_oracle_beta()
+        metric = self.calculate_metric()
+        self._this_relevance = self.calculate_information_relevance() # x & y
+        self._this_redundancy = self.calculate_information_redundancy() # x & x
+        if self.is_regression:
+            score = metric - (self._this_relevance - self._this_redundancy)
+        else:
+            score = metric + (self._this_relevance - self._this_redundancy)
+        
+        if self.current_best_metric is None:
+            self.update_best(metric, score, step)
+            
+        elif self.is_regression and (self.current_best_score > score):
+            self.update_best(metric, score, step)
+                
+        elif not self.is_regression and (self.current_best_score < score):
+            self.update_best(metric, score, step)
