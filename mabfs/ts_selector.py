@@ -64,6 +64,7 @@ class ThompsonSamplingFeatureSelection:
         self.exploration_coef = exploration_coef
         self.desired_number_of_features = desired_number_of_features
         self.features = list(self.X.columns)
+        self.features_history = list()
 
         self.mutual_information = None
         self.iredundancy_matrix = None
@@ -88,6 +89,11 @@ class ThompsonSamplingFeatureSelection:
                 distr[feat] = self.feat_distributions[feat].sample()
             self.current_features = [k for k, v in distr.items() if
                                      v >= min(sorted(distr.values())[-self.desired_number_of_features:])]
+
+        if self.current_features in self.features_history:
+            self.generative_oracle_beta()
+        else:
+            self.features_history.append(self.current_features)
 
     def calculate_metric(self):
         metric = cross_val_score(estimator=self.model,

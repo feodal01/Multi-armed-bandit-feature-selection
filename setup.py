@@ -8,7 +8,7 @@ requirements = ["numpy", "pandas", "sklearn", "scipy", "joblib", "pyyaml", "mult
 # Функция, которая принимает несколько аргументов. Она присваивает эти значения пакету.
 setuptools.setup(
     name="mabfs",
-    version="0.0.3",
+    version="0.0.4",
     author="Evgeny Orlov",
     author_email="evgenyorlov1991@gmail.com",
     description="Multi armed bandit feature selection",
