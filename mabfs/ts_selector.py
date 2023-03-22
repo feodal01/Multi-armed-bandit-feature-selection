@@ -1,6 +1,7 @@
 import itertools
 import random
-from multiprocessing import Pool
+# from multiprocessing import Pool, Manager, Process
+from multiprocess import Pool, Manager, Process
 from pathlib import Path
 
 import numpy as np
@@ -123,17 +124,36 @@ class ThompsonSamplingFeatureSelection:
                 result[col] = p.apply(mutual_info_classif, args=(self.X[col].values.reshape(-1, 1), self.y.values))[0]
         self.mutual_information = result
 
+    def _calc_mutual_redundancy_regression(self, col_pairs, result_dict):
+        for col1, col2 in col_pairs:
+            mi = mutual_info_regression(self.X[col1].values.reshape(-1, 1), self.X[col2])
+            result_dict[(col1, col2)] = mi
+
     def calculate_mutual_redundancy(self):
+        manager = Manager()
+        result_dict = manager.dict()
+        col_names = self.X.columns.tolist()
+        column_pairs = [(col_names[i], col_names[j]) for i in range(len(col_names)) for j in
+                        range(i + 1, len(col_names))]
+        num_processes = self.n_jobs
+        chunk_size = len(column_pairs) // num_processes
+        column_pairs_chunks = [column_pairs[i:i + chunk_size] for i in range(0, len(column_pairs), chunk_size)]
+
+        processes = []
+        for i in range(num_processes):
+            p = Process(target=self._calc_mutual_redundancy_regression,
+                        args=(column_pairs_chunks[i], result_dict))
+            p.start()
+            processes.append(p)
+
+        for p in processes:
+            p.join()
+
         result = {}
-        columns = self.X.columns
-        with Pool() as p:
-            for i in range(len(columns)):
-                for j in range(i + 1, len(columns)):
-                    col1 = columns[i]
-                    col2 = columns[j]
-                    key = f"{col1}_{col2}"
-                    result[key] = p.apply(mutual_info_regression, args=(self.X[col1].values.reshape(-1, 1),
-                                                                        self.X[col2]))
+        self.result_dict = result_dict
+        for (col1, col2), mi in result_dict.items():
+            result.update({f"{col1}_{col2}": mi})
+
         self.iredundancy_matrix = result
 
     def calculate_information_relevance(self):
