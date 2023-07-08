@@ -1,7 +1,7 @@
 import itertools
 import random
-# from multiprocessing import Pool, Manager, Process
-from multiprocess import Pool, Manager, Process
+from multiprocessing import Pool, Manager, Process
+# from multiprocess import Pool, Manager, Process
 from pathlib import Path
 
 import numpy as np
