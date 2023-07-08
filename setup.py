@@ -3,9 +3,10 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-requirements = ["numpy", "pandas", "sklearn", "scipy", "joblib", "pyyaml", "multiprocess"]
+requirements = ["numpy", "pandas", "scikit-learn",
+                "scipy", "joblib", "pyyaml",
+                "multiprocess"]
 
-# Функция, которая принимает несколько аргументов. Она присваивает эти значения пакету.
 setuptools.setup(
     name="mabfs",
     version="0.0.4",
