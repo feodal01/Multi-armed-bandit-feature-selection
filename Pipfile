@@ -14,8 +14,9 @@ multiprocess = "*"
 ipykernel = "*"
 wheel = "*"
 twine = "*"
+liac-arff = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.9"
+python_version = "3.11"

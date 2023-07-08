@@ -1,11 +1,11 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3f918f07c399abdd2adae7aaf13d285d5fd4d91063306e8e0311edab71aeb2f2"
+            "sha256": "e16daa5d715aa0708bc611bbfff17d1d3b370cc3b6184da116b7a74f10a6c850"
         },
         "pipfile-spec": 6,
         "requires": {
-            "python_version": "3.9"
+            "python_version": "3.11"
         },
         "sources": [
             {
@@ -277,6 +277,13 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==24.2.0"
+        },
+        "liac-arff": {
+            "hashes": [
+                "sha256:3220d0af6487c5aa71b47579be7ad1d94f3849ff1e224af3bf05ad49a0b5c4da"
+            ],
+            "index": "pypi",
+            "version": "==2.5.0"
         },
         "markdown-it-py": {
             "hashes": [
