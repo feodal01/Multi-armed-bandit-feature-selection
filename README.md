@@ -17,43 +17,32 @@ Optimization could be used for both regression and classification.
 ### Usage
 
 ```python
-import pandas as pd
-import numpy as np
-from sklearn.datasets import make_regression
 from sklearn.metrics import make_scorer
 from sklearn.metrics import mean_absolute_error
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from mabfs.ts_selector import ThompsonSamplingFeatureSelection
+from datasets.load import madelon
 
-x, y, coef = make_regression(n_samples=1000,
-                             n_features=500,
-                             n_informative=10,
-                             effective_rank=5,
-                             tail_strength=0.7,
-                             noise=0.05,
-                             shuffle=True,
-                             bias=100,
-                             coef=True,
-                             random_state=666)
+# load madelon dataset
+cat, num, x, y = madelon()
 
-x = pd.DataFrame(x)
-y = pd.Series(y)
+# spawn model that will be used for selection
+model = RandomForestRegressor(random_state=666, n_jobs=-1)
 
-true_features = np.where(coef > 0)[0]
-
-model = LinearRegression()
+# spawn tsfs class
 tsfs = ThompsonSamplingFeatureSelection(estimator=model,
-                                        scoring=make_scorer(
-                                            mean_absolute_error),
-                                        desired_number_of_features=10,
-                                        x=x,
-                                        y=y,
+                                        scoring=make_scorer(mean_absolute_error),
                                         cv=3,
                                         exploration_coef=0.3,
-                                        optimization_steps=100000,
+                                        optimization_steps=100_000,
+                                        n_features_to_select=20,
                                         is_regression=True,
-                                        n_jobs=36
-                                        )
+                                        n_jobs=36,
+                                        verbose=1)
 
-tsfs._fit()
+# select features
+tsfs.fit(X=x, y=y)
+
+# show features
+selected_features = tsfs.get_feature_names_out()
 ```

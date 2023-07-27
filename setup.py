@@ -9,7 +9,7 @@ requirements = ["numpy", "pandas", "scikit-learn",
 
 setuptools.setup(
     name="mabfs",
-    version="0.0.4",
+    version="0.0.5",
     author="Evgeny Orlov",
     author_email="evgenyorlov1991@gmail.com",
     description="Multi armed bandit feature selection",
