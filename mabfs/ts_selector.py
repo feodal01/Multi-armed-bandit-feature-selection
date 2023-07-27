@@ -85,7 +85,6 @@ class ThompsonSamplingFeatureSelection(SelectorMixin,
         check_is_fitted(self)
         return self.support_
 
-
     @_fit_context(
         prefer_skip_nested_validation=False
     )
@@ -141,7 +140,8 @@ class ThompsonSamplingFeatureSelection(SelectorMixin,
 
         # Set final attributes
         self.estimator_.fit(X[:, self._best_features], y, **fit_params)
-        self._support = []
+        self._support = np.array([True if x in self._best_features
+                                  else False for x in self._features])
 
         return self
 
