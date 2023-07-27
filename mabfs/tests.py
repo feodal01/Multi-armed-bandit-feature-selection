@@ -25,19 +25,19 @@ def test_selection():
     # Список значимых фичей
     true_features = np.where(coef > 0)[0]
     model = LinearRegression()
-    tsfs = ThompsonSamplingFeatureSelection(model=model,
+    tsfs = ThompsonSamplingFeatureSelection(estimator=model,
                                             scoring=make_scorer(mean_absolute_error),
                                             desired_number_of_features=5,
                                             x=x,
                                             y=y,
-                                            cv_splits=3,
+                                            cv=3,
                                             exploration_coef=0.3,
                                             optimization_steps=1000,
                                             is_regression=True,
                                             n_jobs=36
                                             )
-    tsfs.select_best_features()
-    assert tsfs.best_features == list(true_features)
+    tsfs._fit()
+    assert tsfs._best_features == list(true_features)
 
 
 if __name__ == "__main__":

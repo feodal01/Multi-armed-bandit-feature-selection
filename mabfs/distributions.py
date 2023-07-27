@@ -12,7 +12,7 @@ class BetaDistribution:
         self.a = a
         self.b = b
 
-    def sample(self) -> np.float:
+    def sample(self) -> float:
         return np.random.beta(self.a, self.b)
 
     def update(self, result: int):
